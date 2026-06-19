@@ -1,6 +1,7 @@
 let express = require("express");
 let cors = require("cors");
 const { mongodb } = require("./mongodb/mongodb");
+const { langchain } = require("./langchain/langchain");
 let app = express();
 let port = 6000;
 
@@ -10,12 +11,15 @@ app.get("/",(req,res)=>{
 
 app.use(cors(),express.json());
 
-app.post("question",(req,res)=>{
+app.post("/question", async (req,res)=>{
 try{
-
+    let { question } = req.body;
+    let answer = await langchain(question);
+    res.json({ answer });
 }
 catch(error){
     console.log(error.message);
+    res.status(500).json({ error: error.message });
 }
 })
 
