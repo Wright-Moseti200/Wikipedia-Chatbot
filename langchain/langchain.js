@@ -3,7 +3,6 @@ let {WikipediaQueryRun} = require("@langchain/community/tools/wikipedia_query_ru
 let {RecursiveCharacterTextSplitter} = require("@langchain/textsplitters")
 let {Document} = require("@langchain/core/documents");
 let {ChatGoogleGenerativeAI,GoogleGenerativeAIEmbeddings} = require("@langchain/google-genai");
-let {createRetrievalChain} = require("@langchain/classic/chains/retrieval");
 let {createStuffDocumentsChain}=require("@langchain/classic/chains/combine_documents");
 let {ChatPromptTemplate, MessagesPlaceholder} = require("@langchain/core/prompts");
 let {MongoDBAtlasVectorSearch} = require("@langchain/mongodb");
@@ -18,7 +17,7 @@ let chatHistory = new ChatMessageHistory();
 let langchain = async(question) =>{
     try{
         let wikipediacollection = mongoose.connection.db.collection("wikipediachunks");
-        let geminiembeddings = new GoogleGenerativeAIEmbeddings({model:"gemini-embedding-001",apiKey:""})
+        let geminiembeddings = new GoogleGenerativeAIEmbeddings({model:"gemini-embedding-001",apiKey:process.env.GEMINI_KEY})
         let vectorSearch = new MongoDBAtlasVectorSearch(geminiembeddings,{
             collection:wikipediacollection,
             indexName:"vector_index",
@@ -31,7 +30,7 @@ let langchain = async(question) =>{
       if(goodMatches.length>0){
         console.log(`[Cache hit] Found ${goodMatches.length} relevant chunks in MongoDB`);
         let docs = goodMatches.map(([document])=>document);
-        let llm = new ChatGoogleGenerativeAI({model:"gemini-2.5-flash-lite",apiKey:""});
+        let llm = new ChatGoogleGenerativeAI({model:"gemini-2.5-flash-lite",apiKey:process.env.GEMINI_KEY});
         let prompt = ChatPromptTemplate.fromMessages([
             ["system","Answer using only this context:\n\n{context}"],
             new MessagesPlaceholder("chat_history"),
@@ -61,7 +60,7 @@ let langchain = async(question) =>{
 
      let chunks = await splitter.splitDocuments([new Document({pageContent:rawText,metadata:{topic:question}})]);
      await vectorSearch.addDocuments(chunks);
-     let llm = new ChatGoogleGenerativeAI({model:"gemini-2.5-flash-lite",apiKey:""});
+     let llm = new ChatGoogleGenerativeAI({model:"gemini-2.5-flash-lite",apiKey:process.env.GEMINI_KEY});
         let prompt = ChatPromptTemplate.fromMessages([
             ["system","Answer using only this context:\n\n{context}"],
             new MessagesPlaceholder("chat_history"),

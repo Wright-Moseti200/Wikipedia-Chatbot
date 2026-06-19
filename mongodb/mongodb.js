@@ -3,7 +3,8 @@ require("dotenv").config();
 
 let mongodb = async()=>{
     try{
-        await mongoose.connect()
+        await mongoose.connect(`${process.env.MONGO_URI}/Wikipedia-AI-chatbot`)
+        console.log("Database connected successfully");
     }
     catch(error){
         console.log(error.message);
