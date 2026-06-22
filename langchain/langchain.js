@@ -51,7 +51,22 @@ let langchain = async(question) =>{
       let wiki = new WikipediaQueryRun({topKResults:1,maxDocContentLength:5000});
       let rawText = await wiki.invoke(question);
       if(!rawText || rawText.startsWith("No good Wikipedia Search Result")){
-          console.log(`No Wikipedia article found for: "${question}"`);
+          console.log(`No Wikipedia article found for: "${question}"-using models own knowledge`);
+          let llm = new ChatGoogleGenerativeAI({model:"gemini-2.5-flash-lite",apiKey:process.env.GEMINI_KEY});
+          let fallbackPrompt = ChatPromptTemplate.fromMessages([
+            ["system","You are a helpful assistant. Wikipedia had no article on this topic, so answer using your own general knowledge instead."],
+            new MessagesPlaceholder("chat_history"),
+            ["human","{input}"]
+          ]);
+          let fallbackchain = fallbackPrompt.pipe(llm);
+          let result = await fallbackchain.invoke({
+            input:question,
+            chat_history:await chatHistory.getMessages()
+          });
+          let answer = result.content;
+          await chatHistory.addUserMessage(question);
+          await chatHistory.addAIMessage(answer);
+          return answer;
       }
       let splitter = new RecursiveCharacterTextSplitter({
         chunkSize:1000,
